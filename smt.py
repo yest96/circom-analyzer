@@ -50,7 +50,7 @@ def select_witness_sample(witnesses):
 
 def check_unboundedness(ranges, subgraph_vars, constraints, witness_vals, field_modulus, solver_opts=None):
     """
-    For each var in subgraph_vars, check if it can exceed its max by asserting var > max.
+    For each var in subgraph_vars, check if it can exceed its max by asserting var not in interval.
     Other vars are fixed to witness_vals.
     Returns list of vars found unbounded.
     """
@@ -77,11 +77,9 @@ def check_unboundedness(ranges, subgraph_vars, constraints, witness_vals, field_
             var_terms[vid] = tm.mkFiniteFieldElem(str(val), F)
     # Assert all constraints
     for c in constraints:
-        # build LHS and RHS similar to original script
         # each constraint c = [part0, part1, part2]
         terms = []
         for part in c:
-            # sum over contributions
             sum_terms = [tm.mkTerm(Kind.FINITE_FIELD_MULT, var_terms[var], tm.mkFiniteFieldElem(str(coeff), F))
              for var, coeff in part.items()]
             if not sum_terms:
@@ -102,10 +100,10 @@ def check_unboundedness(ranges, subgraph_vars, constraints, witness_vals, field_
             continue
         max_val = ranges[int(vid)][1]
         min_val = ranges[int(vid)][0]
-        # Create assertion var > max_val
+        # Create assertion var not in interval
         if max_val < field_modulus - 1:
 
-            # Попробуем несколько значений сразу за текущим максимумом
+            # Try several values
             not_accessed = field_modulus - max_val
             candidates = [max_val + 1 + i * not_accessed // 10 for i in range (10)] + [field_modulus - 1]
             for cv in candidates:
@@ -116,11 +114,11 @@ def check_unboundedness(ranges, subgraph_vars, constraints, witness_vals, field_
                 
                 if res.isSat():
                     unbounded.append(vid)
-                    break  # достаточно одного успешного кандидата
+                    break  # One success in enough
                 slv.pop()
         if min_val > 0:
 
-            # Попробуем несколько значений сразу за текущим максимумом
+            # Try several values
             not_accessed = min_val
             candidates = [max_val - 1 - i * not_accessed // 10 for i in range (10)] + [0]
             for cv in candidates:
@@ -131,7 +129,7 @@ def check_unboundedness(ranges, subgraph_vars, constraints, witness_vals, field_
                 
                 if res.isSat():
                     unbounded.append(vid)
-                    break  # достаточно одного успешного кандидата
+                    break  # One success in enough
                 slv.pop()
     return unbounded
 
@@ -145,8 +143,5 @@ def main(ranges, subgraph_vars, constraint_file, witnesses, field_modulus):
     return unbd
 
 if __name__ == '__main__':
-    # Example invocation
-    # ranges = json.load(open('stats/intervals.json'))
-    # subgraph_vars = [...]  # from previous module
-    # main(ranges, subgraph_vars, 'constraints/multiplier2_constraints.json', 'constraints/multiplier2.sym', 'witnesses', 21888242871839275222246405745257275088548364400416034343698204186575808495617)
+    
     pass
